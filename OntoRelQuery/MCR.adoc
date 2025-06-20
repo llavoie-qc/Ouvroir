@@ -1,0 +1,47 @@
+== Prémices
+
+* Les opérations s'appliquent-elles à l'ontologie ou à l'ontorel ?
+* Quel est le résultat d'une opération
+  (une ontologie, un ontorel, une relation, une table...) ?
+
+== Taxonomie (pas utile - ne pas faire)
+
+XX MS_SCH   cl, hierachy (sub, sup), level (n), traversal (?)
+
+== Restriction (sélection)
+
+xx MS_SC    cl
+xx MS_SCF   cl, filCol, filCond
+
+-> MS_SCPD  cl (dp)* [cond]
+
+== Groupement
+
+MS_SCA   cl, aggCol, aggFun -> à généraliser
+
+* Qu'est une colonne relativement à une ontologie ?
+* Quels sont les termes admissibles dans l'expression filCond ?
+* Quelle différence entre MS_SCPO et MS_SCPOC ?
+
+== Jointure
+
+xx MS_SCPO  cl, op                    !! c'est une jointure
+xx MS_SCPOC cl-domain, op, cl-range
+
+-> MS_JO   cl-dom op (cl-ran)*
+
+MI_AP   from, to
+MI_SP   from, to
+MI_PPO  from, to, op
+
+
+* Dans quel ordre les chemins sont-il énumérés ?
+* Que faire lorsque des chemins sontiennent des boucles ?
+* MI_SP... il peut y en avoir plusieurs
+* MI_PPO... il peut y en avoir plusieurs
+
+== ?!?!?
+
+MC_CO sub
+
+* Liste des sous-modèles à utiliser...

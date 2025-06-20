@@ -1,0 +1,181 @@
+== Introduction
+
+Notes d’exploration des documents MCR_SDC.pdf et MCR_SES.pdf.
+
+.À noter
+* La SDC est plutôt une SES et la SES est plutôt une SDC.
+
+.Questions
+* Les opérations MCR s'appliquent-elles à l'ontologie ou à l'ontorel ?
+* Quel est le résultat d'une opération
+  (une ontologie, un ontorel, une relation, une table...) ?
+
+.Hypothèses et conventions
+Pour la suite, on pose que les opérations portent sur une ontologie dont les
+éléments constitutifs sont
+
+* la classe (cl:iri),
+* l’association (dom:iri, op:iri, ran:iri),
+* l’attribut (dp:T),
+* l’individu (uid:uid).
+
+et livrent une relation
+(plutôt qu’une table puisque, aussi bien, il n’y a pas de doublons ni de nuls... je me trompe ?)
+
+.Remarque
+Ces opérations ne sont pas internes, ce qui limite considérable la capacité de composition.
+C'est aussi le cas de SQARQL.
+Dans la dernière partie de la note, on considèrera la possiblité de pallier cette restriction.
+
+== Opérations de requêtes sur les entités
+
+Le résultat de ces requêtes sont des relations dont les attributs sont composées
+
+* d'un identifiant de classe et du type IRI (limité aux seules valeurs de cette classe)
+* d'un identifiant de dp et du type du dp (T)
+* d'un identifiant fourni et d'un type fourni (via l'opération d'extension)
+
+=== Restriction-Projection (sélection)
+
+....
+MS_SC cl
+MS_SCF cl, filCol, filCond
+....
+
+* Qu'est une colonne relativement à une ontologie ?
+* Quels sont les termes admissibles dans l'expression filCond ?
+
+.Proposition MS_RS
+....
+MS_RP cl (dp)* [cond]
+....
+
+* soit les restriction (WHERE) puis la projection sur les dp de cl
+* ajouter le renommage ?
+* ajouter l'extension ?
+* on en arrive au SELECT :-)
+
+.Propostion SELECT
+....
+SELECT exp-dp+ FROM cl WHERE cond
+....
+* où une exp-dp est une expression dont les termes atomiques sont des tp, des valeurs (voir des appels de fonctions)
+  - donc tout à fait analogue aux SELECT de SQL et de SPARQL
+* où cond est une exp de type Booléen.
+
+=== Jointure
+
+....
+MS_SCPO  cl, op                    !! dans le cas général, c'est une union d'associations
+MS_SCPOC cl-dom, op, cl-ran        !! la relation correspondant à une association spécifique
+....
+* Quelle différence entre MS_SCPO et MS_SCPOC ?
+
+.Proposition MS_JO
+....
+MS_JO   cl-dom op (cl-ran)*
+....
+* Soit l'union des relations correspondant aux associations
+  (cl-dom, op, cl-ran_1), ..., (cl-dom, op, cl-ran_n).
+* Si aucun cl-ran n'est spécifié, cela correspond à l'union de toutes les
+  associations correspondant à cl-dom op (comme MS_SCPO).
+* MS_JO est une généralisation de MS_SCPO et MS_SCPOC
+* La signature de la relation résultante est
+  (TYPE(cl-dom), PPSTC(cl-ran_1, ...,cl-ran_n))
+  - où PPSTC est « le plus petit surtype commun »,
+  - où PPSTC peut être défini même si la taxonomie n'est pas une arborescence, mais un graphe acyclique.
+* Faut-il généraliser en permettant la composition interne des associations ? Voir propostion FROM ci-après.
+
+.Propostion FROM
+....
+FROM    cl-dom (CONNECT op (cl-ran)*)*
+....
+* Attention, comportement «à la SPARQL» : la composition ne se fait qu'avec
+  le prédécesseur immédiat et non «a la SQL» avec, potentiellement, tout attribut antérieur.
+* Je suggère de ne pas pas utiliser JOIN mais un autre lexeme (CONNECT)
+  afin de pas créer d'ambiguïté avec le JOIN de SQL.
+
+=== Groupement
+
+....
+MS_SCA   cl, aggCol, aggFun
+....
+
+* À généraliser ou à reporter dans la partie relationnelle ?
+
+=== Union, intersection, différence
+
+* À ajouter ou à reporter dans la partie relationnelle ?
+
+
+== Opérations de requête sur la structure ontologique
+Ces requêtes ont pour but de permettre d'explorer la structure de l'ontologie (pas son contenu).
+Un peu comme des requêtes sur le catalogue en SQL.
+
+Plusieurs questions doivent être éclaircies :
+
+* Quelle est la nature du résulat ?
+* Un résultat pourrait-il être utilisé directement dans une requête sur les entités ?
+
+=== Chemins
+
+....
+xx MI_AP   from, to    -- tous les chemins
+xx MI_SP   from, to    -- tous les chemin minimaux (fonction de poids)
+xx MS_SCH  cl, hierachy (sub, sup), level (n), traversal (?) -- chemins (isa seulement)
+xx MI_PPO  from, to, op
+....
+
+* Dans quel ordre les chemins sont-ils énumérés ?
+* Que faire lorsque des chemins contiennent des cycles ?
+* MI_SP... il peut y en avoir plusieurs
+* MI_PPO... il peut y en avoir plusieurs
+* Prévoir de chemins à prendre une considération (tc)
+  - (A) axiomes seulement
+  - (I) isa selement
+  - (X) axiomes ou isa
+
+.Proposition MI
+....
+--> MI_tous tc from to (cl|op)*           -- tous les chemins
+--> MI_min  tc from to (cl|op)* poids     -- tous les plus courts chemins
+--> MI_inf  tc from to (cl|op)* poids n   -- dont la longueur est inférieur à n
+--> MI_sup  tc from to (cl|op)* poids n   -- dont la longueur est inférieur à n
+....
+
+===
+
+=== Sous-modèles
+
+MC_CO sub
+
+* Liste des sous-modèles à utiliser...
+* À définir
+
+
+== Comparaison avec SPARQL
+
+.SPARQL
+....
+SELECT exp-dp+ FROM cl (JOIN op-ran)* WHERE cond GROUP BY exp-dp+
+....
+
+.SPARQL étendu version « MCR »
+....
+EXTRACT exp-dp+ FROM cl (CONNECT op (cl-ran)*)* WHERE cond GROUP BY exp-dp+
+....
+* Il faudrait analyser les différences entre les possibilité du JOIN de SPARQL et celles du CONNECT de l'extension.
+
+== Proposition mixte ontorelationnelle :-)
+
+....
+mcr ::= WITH (id := exp)+ : exp-rel
+exp ::= exp-rel | exp-onto | exp-sca
+exp-rel ::= exp-SQL | exp-Discipulus | exp-TD
+exp-onto ::= EXTRACT exp-dp+ FROM cl (CONNECT op (cl-ran)*)* WHERE cond
+exp-sca ::= «expression dont le résultat appartient à un des types scalaires de base»
+....
+
+
+
+
